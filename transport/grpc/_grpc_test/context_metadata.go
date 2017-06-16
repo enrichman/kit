@@ -127,6 +127,13 @@ func extractConsumedCorrelationID(ctx context.Context, _ metadata.MD, md metadat
 	return ctx
 }
 
+func checkClientFinalizer(ctx context.Context, _ metadata.MD, md metadata.MD, err error) {
+	if hdr, ok := md[string(correlationIDTRLR)]; ok {
+		fmt.Printf("\tClient received consumed correlationID %q in metadata trailer, set context\n", hdr[len(hdr)-1])
+		ctx = context.WithValue(ctx, correlationIDTRLR, hdr[len(hdr)-1])
+	}
+}
+
 /* CorrelationID context handlers */
 
 func SetCorrelationID(ctx context.Context, v string) context.Context {

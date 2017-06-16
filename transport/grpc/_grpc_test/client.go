@@ -45,6 +45,9 @@ func NewClient(cc *grpc.ClientConn) Service {
 			grpctransport.ClientAfter(
 				extractConsumedCorrelationID,
 			),
+			grpctransport.ClientFinalizer(
+				checkClientFinalizer,
+			),
 		).Endpoint(),
 	}
 }

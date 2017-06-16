@@ -22,6 +22,7 @@ type Client struct {
 	grpcReply   reflect.Type
 	before      []ClientRequestFunc
 	after       []ClientResponseFunc
+	finalizer   ClientFinalizerFunc
 }
 
 // NewClient constructs a usable Client for a single remote endpoint.
@@ -75,12 +76,29 @@ func ClientAfter(after ...ClientResponseFunc) ClientOption {
 	return func(c *Client) { c.after = append(c.after, after...) }
 }
 
+// ClientFinalizer is executed at the end of every gRPC request.
+// By default, no finalizer is registered.
+func ClientFinalizer(f ClientFinalizerFunc) ClientOption {
+	return func(c *Client) { c.finalizer = f }
+}
+
 // Endpoint returns a usable endpoint that will invoke the gRPC specified by the
 // client.
 func (c Client) Endpoint() endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
+
+		var (
+			err     error
+			header  metadata.MD
+			trailer metadata.MD
+		)
+		if c.finalizer != nil {
+			defer func() {
+				c.finalizer(ctx, header, trailer, err)
+			}()
+		}
 
 		req, err := c.enc(ctx, request)
 		if err != nil {
@@ -93,7 +111,6 @@ func (c Client) Endpoint() endpoint.Endpoint {
 		}
 		ctx = metadata.NewContext(ctx, *md)
 
-		var header, trailer metadata.MD
 		grpcReply := reflect.New(c.grpcReply).Interface()
 		if err = grpc.Invoke(
 			ctx, c.method, req, grpcReply, c.client,

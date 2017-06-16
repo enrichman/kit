@@ -74,7 +74,7 @@ func ClientAfter(after ...ClientResponseFunc) ClientOption {
 // ClientFinalizer is executed at the end of every HTTP request.
 // By default, no finalizer is registered.
 func ClientFinalizer(f ClientFinalizerFunc) ClientOption {
-	return func(s *Client) { s.finalizer = f }
+	return func(c *Client) { c.finalizer = f }
 }
 
 // BufferedStream sets whether the Response.Body is left open, allowing it

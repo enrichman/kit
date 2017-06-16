@@ -35,6 +35,14 @@ type ServerResponseFunc func(ctx context.Context, header *metadata.MD, trailer *
 // being decoded.
 type ClientResponseFunc func(ctx context.Context, header metadata.MD, trailer metadata.MD) context.Context
 
+// ClientFinalizerFunc can be used to perform work at the end of a client gRPC
+// request, after the response is returned. The principal intended use is for
+// error logging. ClientFinalizerFunc may take additional information from a
+// gRPC metadata header and/or trailer.
+// Note: err may be nil. There maybe also no additional response parameters
+// depending on when an error occurs.
+type ClientFinalizerFunc func(ctx context.Context, header metadata.MD, trailer metadata.MD, err error)
+
 // SetRequestHeader returns a ClientRequestFunc that sets the specified metadata
 // key-value pair.
 func SetRequestHeader(key, val string) ClientRequestFunc {
